@@ -1,0 +1,5 @@
+"prior","WAIC","predictors"
+"weak",464.067858155946,"temperature + HFI + popnProx + popnDown + popnUp"
+"current",482.376554133548,"temperature + HFI + popnProx + popnDown + popnUp"
+"strong",629.265935872146,"temperature + HFI + popnProx + popnDown + popnUp"
+"moderate",766.95414344222,"temperature + HFI + popnProx + popnDown + popnUp"
