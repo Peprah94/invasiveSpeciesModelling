@@ -296,11 +296,181 @@ points(
 
 ## Prior sensitvity analysis
 
-We assessed the sensitivity of model results to the choice of prior distributions by fitting the model under a set of predefined prior scenarios. Each scenario specified a different set of prior settings for the model parameters, while keeping the predictor variables, spatial prior, datasets, spatial mesh, study-area boundary, coordinate reference system, and bias formulation constant. This allowed us to evaluate whether model fit was sensitive to the assumptions made about the prior distributions
+We assessed the sensitivity of model results to the choice of prior distributions by fitting the model under a set of predefined prior scenarios. 
 
-For each prior scenario, the model was fitted using the `fit_esox_model()` function. The fitted model, together with its WAIC value and the predictor variables included in the model, was stored in a named list. The models were then compared using the Watanabe–Akaike information criterion (WAIC), with lower WAIC values indicating better expected out-of-sample predictive performance among the fitted models.
+```{r}
+#| eval: false
+#| 
+prior_scenarios <- list(
 
-The WAIC values for all prior scenarios were combined into a comparison table and sorted in ascending order. The prior scenario with the lowest WAIC was subsequently selected for the final model. The resulting comparison table was also saved as `prior_sensitivity_WAIC.csv` to provide a record of the prior sensitivity analysis and the basis for selecting the prior specification used in subsequent analyses.
+  # --------------------------------------------------------------------------
+  # Prior 1: relatively weak / diffuse
+  # --------------------------------------------------------------------------
+
+  weak = list(
+
+    Intercept = list(
+      mean = 0,
+      prec = 0.1
+    ),
+
+    temperature = list(
+      mean = 0,
+      prec = 0.1
+    ),
+
+    HFI = list(
+      mean = 0,
+      prec = 0.1
+    ),
+
+    popnProx = list(
+      mean = 0,
+      prec = 0.1
+    ),
+
+    popnDown = list(
+      mean = 0,
+      prec = 0.1
+    ),
+
+    popnUp = list(
+      mean = 0,
+      prec = 0.1
+    )
+  ),
+
+
+  # --------------------------------------------------------------------------
+  # Prior 2: your current priors
+  # --------------------------------------------------------------------------
+
+  current = list(
+
+    Intercept = list(
+      mean = 0,
+      prec = 1
+    ),
+
+    temperature = list(
+      mean = 0,
+      prec = 1
+    ),
+
+    HFI = list(
+      mean = 0,
+      prec = 1
+    ),
+
+    popnProx = list(
+      mean = 0,
+      prec = 1
+    ),
+
+    popnDown = list(
+      mean = 0,
+      prec = 1
+    ),
+
+    popnUp = list(
+      mean = 0,
+      prec = 1
+    )
+  ),
+
+
+  # --------------------------------------------------------------------------
+  # Prior 3: moderately informative
+  # --------------------------------------------------------------------------
+
+  moderate = list(
+
+    Intercept = list(
+      mean = 0,
+      prec = 10
+    ),
+
+    temperature = list(
+      mean = 0,
+      prec = 10
+    ),
+
+    HFI = list(
+      mean = 0,
+      prec = 10
+    ),
+
+    popnProx = list(
+      mean = 0,
+      prec = 10
+    ),
+
+    popnDown = list(
+      mean = 0,
+      prec = 10
+    ),
+
+    popnUp = list(
+      mean = 0,
+      prec = 10
+    )
+  ),
+
+
+  # --------------------------------------------------------------------------
+  # Prior 4: stronger shrinkage
+  # --------------------------------------------------------------------------
+
+  strong = list(
+
+    Intercept = list(
+      mean = 0,
+      prec = 0.001
+    ),
+
+    temperature = list(
+      mean = 0,
+     prec = 0.001
+    ),
+
+    HFI = list(
+      mean = 0,
+     prec = 0.001
+    ),
+
+    popnProx = list(
+      mean = 0,
+     prec = 0.001
+    ),
+
+    popnDown = list(
+      mean = 0,
+     prec = 0.001
+    ),
+
+    popnUp = list(
+      mean = 0,
+     prec = 0.001
+    )
+  )
+)
+
+
+spatial_prior <- list(
+
+  prior.range = c(
+    50,
+    0.01
+  ),
+
+  prior.sigma = c(
+    1,
+    0.01
+  )
+)
+```
+
+Each scenario specified a different set of prior settings for the model parameters, while keeping the predictor variables, spatial prior, datasets, spatial mesh, study-area boundary, coordinate reference system, and bias formulation constant. This allowed us to evaluate whether model fit was sensitive to the assumptions made about the prior distributions.
 
 ```{r priorSensitvity}
 #| eval: false
@@ -400,15 +570,30 @@ write.csv(
 )
 ```
 
+For each prior scenario, the model was fitted using the `fit_esox_model()` function. The fitted model, together with its WAIC value and the predictor variables included in the model, was stored in a named list. The models were then compared using the Watanabe–Akaike information criterion (WAIC), with lower WAIC values indicating better expected out-of-sample predictive performance among the fitted models.
+
+The WAIC values for all prior scenarios were combined into a comparison table and sorted in ascending order. The prior scenario with the lowest WAIC was subsequently selected for the final model. The resulting comparison table was also saved as `prior_sensitivity_WAIC.csv` to provide a record of the prior sensitivity analysis and the basis for selecting the prior specification used in subsequent analyses.
+
+```{r tbl-priorSensitivity}
+#| echo: false
+
+library(dplyr)
+
+data <- readr::read_csv(
+  "data/esox/prior_sensitivity_WAIC.csv"
+)
+knitr::kable(
+  data %>%
+    dplyr::select(-any_of(c("n_predictors", "model_id"))),
+  caption = "The combination of predictors used in the variable selection for Northern pike, the WAIC value and the change in WAIC from the model with the lowest WAIC"
+)
+```
+
+The weak priors with intercept and covariate effects having a Normal distribution with mean $0$ and variance $100$ (@tbl-priorSensitivity). 
+
 ## Variable selection
 
 We evaluated alternative combinations of the candidate explanatory variables to identify the predictor set providing the best model fit. All possible non-empty combinations of the candidate predictors were generated using `combn()`. This resulted in a set of models ranging from single-predictor models to the full model containing all candidate predictors.
-
-Each predictor combination was fitted using the `fit_esox_model()` function. The selected prior specification from the prior sensitivity analysis was used for all models, while the spatial prior, datasets, spatial mesh, study-area boundary, coordinate reference system, and bias formulation were held constant. Thus, differences among models were attributable to the set of predictors included in the fixed-effects component.
-
-For each fitted model, we recorded the predictor variables included in the model, the number of predictors, and the corresponding WAIC value. The models were then ranked according to WAIC, with lower values indicating better expected predictive performance. We also calculated the difference in WAIC between each model and the model with the lowest WAIC (`ΔWAIC`).
-
-The predictor combination associated with the lowest WAIC was selected as the predictor set for subsequent analyses. The complete model comparison, including the model identifier, predictor combination, number of predictors, WAIC, and ΔWAIC, was saved as `variable_selection_WAIC.csv`.
 
 ```{r}
 #| eval: false
@@ -561,26 +746,32 @@ write.csv(
 )
 ```
 
+Each predictor combination was fitted using the `fit_esox_model()` function. The selected prior specification from the prior sensitivity analysis was used for all models, while the spatial prior, datasets, spatial mesh, study-area boundary, coordinate reference system, and bias formulation were held constant. Thus, differences among models were attributable to the set of predictors included in the fixed-effects component.
+
+For each fitted model, we recorded the predictor variables included in the model, the number of predictors, and the corresponding WAIC value. The models were then ranked according to WAIC, with lower values indicating better expected predictive performance. We also calculated the difference in WAIC between each model and the model with the lowest WAIC (`ΔWAIC`).
+
+The predictor combination associated with the lowest WAIC was selected as the predictor set for subsequent analyses. The complete model comparison, including the model identifier, predictor combination, number of predictors, WAIC, and ΔWAIC, was saved as `variable_selection_WAIC.csv`.
+
+```{r tbl-variableSelection}
+#| echo: false
+
+library(dplyr)
+
+data <- readr::read_csv(
+  "data/esox/variable_selection_WAIC.csv"
+)
+knitr::kable(
+  data %>%
+    dplyr::select(-any_of(c("n_predictors", "model_id"))),
+  caption = "The combination of predictors used in the variable selection for Northern pike, the WAIC value and the change in WAIC from the model with the lowest WAIC"
+)
+```
+
+The model with the lowest WAIC for the Northern pike is one with HFI and popnProx as covariates (@tbl-variableSelection).
+
 # Spatial prediction and mapping
 
 Following model selection, we generated spatial predictions for the lakes included in the analysis. One prediction location was defined for each unique lake by selecting a point on the lake surface using `st_point_on_surface()`. Predictions were generated from the fitted PointedSDMs model using the `predict()` function, requesting the model's linear predictor on the link scale.
-
-The resulting predictions included the posterior mean and standard deviation of the linear predictor, together with the corresponding posterior quantiles. Because the model uses a complementary log-log (cloglog) link, the posterior mean of the linear predictor was transformed to the occurrence-probability scale using the inverse cloglog transformation:
-
-$$
-p = 1-\exp\{-\exp(\eta)\},
-$$
-
-where \(p\) is the predicted occurrence probability and \(\eta\) is the linear predictor. This transformation produces predicted occurrence probabilities bounded between 0 and 1.
-
-The predictions were subsequently joined to the corresponding lake polygons using the unique `lake_id`. We assessed prediction coverage by calculating the total number of lakes, the number of lakes with available predictions, the number of lakes without predictions, and the proportion of lakes for which predictions were obtained.
-
-To facilitate spatial visualisation and subsequent analyses, the lake-level occurrence probabilities were rasterised using the first layer of the selected predictor raster as the spatial template. The lake polygons were rasterised using the predicted occurrence probability as the rasterisation field. Where necessary, values were aggregated using the mean. The resulting raster therefore represents the predicted occurrence probability across the spatial extent of the prediction template, with cells outside the predicted lake polygons assigned `NA`.
-
-In addition to the occurrence-probability raster, the posterior mean of the linear predictor was rasterised and retained as a separate spatial layer. Both rasters were stored as GeoTIFF files using single-precision floating-point data and LZW compression.
-
-Finally, the occurrence-probability raster was visualised as a spatial map, with the colour scale constrained to the interval 0–1 to represent the full range of possible occurrence probabilities. The resulting maps were exported in both PDF and PNG formats for subsequent reporting and visualisation.
-
 
 ```{r}
 #| eval: false
@@ -883,3 +1074,29 @@ ggsave(plot = p,
        width = 8)
 
 ```
+
+The resulting predictions included the posterior mean and standard deviation of the linear predictor, together with the corresponding posterior quantiles. Because the model uses a complementary log-log (cloglog) link, the posterior mean of the linear predictor was transformed to the occurrence-probability scale using the inverse cloglog transformation:
+
+$$
+p = 1-\exp\{-\exp(\eta)\},
+$$
+
+where \(p\) is the predicted occurrence probability and \(\eta\) is the linear predictor. This transformation produces predicted occurrence probabilities bounded between 0 and 1.
+
+The predictions were subsequently joined to the corresponding lake polygons using the unique `lake_id`. We assessed prediction coverage by calculating the total number of lakes, the number of lakes with available predictions, the number of lakes without predictions, and the proportion of lakes for which predictions were obtained.
+
+To facilitate spatial visualisation and subsequent analyses, the lake-level occurrence probabilities were rasterised using the first layer of the selected predictor raster as the spatial template. The lake polygons were rasterised using the predicted occurrence probability as the rasterisation field. Where necessary, values were aggregated using the mean. The resulting raster therefore represents the predicted occurrence probability across the spatial extent of the prediction template, with cells outside the predicted lake polygons assigned `NA`.
+
+In addition to the occurrence-probability raster, the posterior mean of the linear predictor was rasterised and retained as a separate spatial layer. Both rasters were stored as GeoTIFF files using single-precision floating-point data and LZW compression.
+
+```{r fig-esoxOccurrencePlot}
+#| fig-cap: 'Covariates used in fitting the model.'
+#| out-width: 100%
+#| echo: false
+#| warning: false
+knitr::include_graphics("img/esox_occ_plot.png")
+```
+
+Finally, the occurrence-probability raster was visualised as a spatial map, with the colour scale constrained to the interval 0–1 to represent the full range of possible occurrence probabilities. The resulting maps were exported in both PDF and PNG formats for subsequent reporting and visualisation.
+
+
